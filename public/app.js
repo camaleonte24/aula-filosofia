@@ -112,7 +112,7 @@
     app.append(h('div', { class: 'auth-wrap' },
       h('div', { class: 'auth-card' },
         h('h1', {}, 'Aula di Filosofia'),
-        h('p', { class: 'sub' }, 'Lo spazio della classe.'),
+        h('p', { class: 'sub' }, 'IV DS 2026/27'),
         form
       )
     ));
