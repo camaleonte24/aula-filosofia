@@ -1,0 +1,147 @@
+:root {
+  --bg: #f3eee3;
+  --paper: #fbf8f1;
+  --ink: #2b2622;
+  --muted: #7a7064;
+  --line: #ddd3c1;
+  --accent: #8a3a28;
+  --accent-dark: #6c2c1d;
+  --pin: #f6e7b8;
+  --danger: #b3261e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1a17;
+    --paper: #27231f;
+    --ink: #eee7da;
+    --muted: #a39887;
+    --line: #3b352e;
+    --accent: #d27a5f;
+    --accent-dark: #e39a83;
+    --pin: #4a3f1f;
+    --danger: #f2837b;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  line-height: 1.5;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* ---------- Accesso ---------- */
+.auth-wrap { min-height: 100%; display: grid; place-items: center; padding: 20px; }
+.auth-card {
+  width: 100%; max-width: 400px; background: var(--paper);
+  border: 1px solid var(--line); border-radius: 10px; padding: 28px 26px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.08);
+}
+.auth-card h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: .01em; }
+.auth-card .sub { margin: 0 0 20px; color: var(--muted); font-style: italic; }
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tabs button {
+  flex: 1; padding: 8px; background: none; border: 1px solid var(--line);
+  border-radius: 6px; color: var(--muted);
+}
+.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+label { display: block; margin: 12px 0 4px; font-size: 14px; color: var(--muted); }
+input[type=text], input[type=password] {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--bg);
+}
+input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.primary {
+  width: 100%; margin-top: 18px; padding: 11px; border: 0; border-radius: 6px;
+  background: var(--accent); color: #fff; font-weight: bold;
+}
+.primary:hover { background: var(--accent-dark); }
+.err { color: var(--danger); font-size: 14px; min-height: 20px; margin-top: 10px; }
+
+/* ---------- Layout principale ---------- */
+.shell { height: 100%; display: flex; flex-direction: column; max-width: 860px; margin: 0 auto; background: var(--paper); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+header.top {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+header.top h2 { margin: 0; font-size: 19px; flex: 1; }
+header.top .who { font-size: 14px; color: var(--muted); }
+.badge { font-size: 11px; background: var(--accent); color: #fff; border-radius: 10px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
+.ghost {
+  background: none; border: 1px solid var(--line); border-radius: 6px;
+  padding: 5px 10px; font-size: 14px;
+}
+.ghost:hover { border-color: var(--accent); }
+.ghost.danger { color: var(--danger); }
+
+.pinned {
+  background: var(--pin); border-bottom: 1px solid var(--line);
+  padding: 8px 16px; font-size: 14px; max-height: 120px; overflow-y: auto;
+}
+.pinned .p-item { padding: 3px 0; }
+.pinned .p-item + .p-item { border-top: 1px dashed var(--line); }
+
+#feed { flex: 1; overflow-y: auto; padding: 16px; }
+.empty { text-align: center; color: var(--muted); font-style: italic; margin-top: 40px; }
+
+.msg { margin-bottom: 14px; }
+.msg .meta { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.msg .meta .name { font-weight: bold; color: var(--ink); }
+.msg .meta .name.admin { color: var(--accent); }
+.msg .body {
+  margin-top: 3px; padding: 9px 12px; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px 12px 12px 12px;
+  white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere;
+}
+.msg.is-pinned .body { border-color: #c9a93a; }
+.msg .actions { margin-left: auto; display: flex; gap: 4px; }
+.msg .actions button {
+  background: none; border: 0; font-size: 12px; color: var(--muted); padding: 0 4px;
+  text-decoration: underline;
+}
+.msg .actions button:hover { color: var(--accent); }
+.msg .actions button.del:hover { color: var(--danger); }
+
+.attach {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+  padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--paper); color: var(--accent); text-decoration: none; font-size: 14px;
+}
+.attach:hover { border-color: var(--accent); }
+.attach small { color: var(--muted); }
+.msg img.preview { display: block; max-width: min(100%, 360px); max-height: 280px; margin-top: 6px; border-radius: 6px; border: 1px solid var(--line); }
+
+/* ---------- Composer ---------- */
+form.composer { border-top: 1px solid var(--line); padding: 10px 14px; }
+.composer .row { display: flex; gap: 8px; align-items: flex-end; }
+.composer textarea {
+  flex: 1; resize: none; max-height: 140px; padding: 9px 12px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+}
+.composer .send { padding: 9px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-weight: bold; }
+.composer .send:disabled { opacity: .5; }
+.composer .clip { padding: 9px 11px; }
+.chosen { font-size: 13px; color: var(--muted); margin-bottom: 6px; display: flex; gap: 8px; align-items: center; }
+.chosen button { background: none; border: 0; color: var(--danger); padding: 0; text-decoration: underline; }
+.composer .err { margin: 6px 0 0; min-height: 0; }
+
+/* ---------- Finestre ---------- */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.modal {
+  width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 20px;
+}
+.modal h3 { margin: 0 0 12px; }
+.modal .close { float: right; }
+.user-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.user-row .info { flex: 1; }
+.user-row small { color: var(--muted); display: block; }
+.note { font-size: 13px; color: var(--muted); margin-top: 12px; }
+
+@media (max-width: 560px) {
+  .shell { border: 0; }
+  header.top .who { display: none; }
+}
