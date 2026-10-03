@@ -4,35 +4,6 @@
   let pollTimer = null;
 
   // ---------- Utilità ----------
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const ICONS = {
-    clip: '<path d="M21 11.5l-8.6 8.6a5 5 0 01-7-7L14 4.5a3.3 3.3 0 014.7 4.7L10.1 17.8a1.7 1.7 0 01-2.4-2.4L15.3 7.8"/>',
-    pin: '<path d="M12 16.5V22M8.5 3h7l-1 6 3 3.2V14H6.5v-1.8L9.5 9z"/>',
-    file: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/>',
-    send: '<path d="M5 12h14M13 6l6 6-6 6"/>',
-    users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.2a3.2 3.2 0 010 5.6M18 14.3c1.8.8 3 2.6 3 4.7"/>',
-    key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>',
-    out: '<path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4M15 8l4 4-4 4M19 12H9"/>',
-    x: '<path d="M6 6l12 12M18 6L6 18"/>',
-    trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
-    down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
-  };
-  function icon(name, size = 18) {
-    const s = document.createElementNS(SVG_NS, 'svg');
-    s.setAttribute('viewBox', '0 0 24 24');
-    s.setAttribute('width', size);
-    s.setAttribute('height', size);
-    s.setAttribute('fill', 'none');
-    s.setAttribute('stroke', 'currentColor');
-    s.setAttribute('stroke-width', '1.8');
-    s.setAttribute('stroke-linecap', 'round');
-    s.setAttribute('stroke-linejoin', 'round');
-    s.setAttribute('aria-hidden', 'true');
-    s.setAttribute('class', 'i');
-    s.innerHTML = ICONS[name]; // solo costanti definite qui sopra
-    return s;
-  }
-
   function h(tag, attrs, ...children) {
     const el = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs || {})) {
@@ -46,11 +17,6 @@
       el.append(c.nodeType ? c : document.createTextNode(c));
     }
     return el;
-  }
-
-  function btn(name, label, onclick, extra = '') {
-    return h('button', { class: 'btn ' + extra, type: 'button', onclick, 'aria-label': label, title: label },
-      icon(name, 18), h('span', { class: 'label' }, label));
   }
 
   async function api(url, opts = {}) {
@@ -89,48 +55,31 @@
     if (d.toDateString() === yesterday.toDateString()) return 'Ieri';
     return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
   }
-  function hue(name) {
-    let n = 0;
-    for (const ch of name) n = (n * 31 + ch.codePointAt(0)) % 360;
-    return n;
-  }
-  function initial(name) {
-    return (name.trim()[0] || '?').toUpperCase();
-  }
-  function shake(el) {
-    el.classList.remove('shake');
-    void el.offsetWidth;
-    el.classList.add('shake');
-  }
 
   // ---------- Accesso ----------
-  function showAuth(startMode = 'login') {
+  function showAuth(startMode = 'login', notice = '') {
     stopPolling();
     app.replaceChildren();
     let mode = startMode;
 
     const err = h('div', { class: 'err', role: 'alert' });
-    const user = h('input', { type: 'text', autocomplete: 'username', required: true, autocapitalize: 'words', spellcheck: 'false' });
+    const user = h('input', { type: 'text', autocomplete: 'username', required: true, spellcheck: 'false' });
     const pass = h('input', { type: 'password', required: true });
     const code = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
     const passHint = h('small', {}, 'Almeno 6 caratteri.');
-    const codeWrap = h('div', { class: 'collapse' },
-      h('div', {}, h('label', { class: 'field' }, h('span', {}, 'Codice classe'), code, h('small', {}, 'Te lo dà la prof.'))));
+    const codeField = h('label', { class: 'field' }, h('span', {}, 'Codice classe'), code, h('small', {}, 'Te lo dà la prof.'));
     const submit = h('button', { class: 'btn primary wide', type: 'submit' });
-    const tabLogin = h('button', { type: 'button', onclick: () => setMode('login') }, 'Accedi');
-    const tabRegister = h('button', { type: 'button', onclick: () => setMode('register') }, 'Registrati');
-    const seg = h('div', { class: 'seg' }, tabLogin, tabRegister);
+    const tabLogin = h('button', { class: 'btn', type: 'button', onclick: () => setMode('login') }, 'Accedi');
+    const tabRegister = h('button', { class: 'btn', type: 'button', onclick: () => setMode('register') }, 'Registrati');
 
     function setMode(m) {
       mode = m;
-      seg.dataset.on = m === 'login' ? '0' : '1';
       tabLogin.classList.toggle('on', m === 'login');
       tabRegister.classList.toggle('on', m === 'register');
       submit.textContent = m === 'login' ? 'Entra' : 'Crea account';
       passHint.hidden = m === 'login';
+      codeField.hidden = m === 'login';
       pass.autocomplete = m === 'login' ? 'current-password' : 'new-password';
-      codeWrap.classList.toggle('open', m === 'register');
-      codeWrap.inert = m !== 'register';
       err.textContent = '';
     }
 
@@ -147,24 +96,23 @@
           showMain();
         } catch (ex) {
           err.textContent = ex.message;
-          shake(err);
         }
         submit.disabled = false;
       },
     },
-      seg,
+      h('div', { class: 'tabs' }, tabLogin, tabRegister),
+      notice ? h('div', { class: 'notice', role: 'status' }, notice) : null,
       h('label', { class: 'field' }, h('span', {}, 'Nome utente'), user),
       h('label', { class: 'field' }, h('span', {}, 'Password'), pass, passHint),
-      codeWrap,
+      codeField,
       submit,
       err
     );
 
     app.append(h('div', { class: 'auth-wrap' },
       h('div', { class: 'auth-card' },
-        h('div', { class: 'mark', 'aria-hidden': 'true' }, 'Φ'),
         h('h1', {}, 'Aula di Filosofia'),
-        h('p', { class: 'sub' }, 'Discussioni, appunti e file della classe.'),
+        h('p', { class: 'sub' }, 'Lo spazio della classe.'),
         form
       )
     ));
@@ -178,17 +126,17 @@
     let lastSnapshot = '';
     let pickedFile = null;
     let first = true;
+    let hiddenTicks = 0;
     const seen = new Set();
-    const seenPins = new Set();
     const isAdmin = me.role === 'admin';
     const coarse = window.matchMedia('(pointer: coarse)').matches;
 
     const feed = h('div', { id: 'feed' });
-    const jump = h('button', { class: 'jump', type: 'button', onclick: () => scrollEnd(true) }, icon('down', 16), 'Nuovi messaggi');
+    const jump = h('button', { class: 'btn primary sm jump', type: 'button', hidden: true, onclick: () => { scrollEnd(true); jump.hidden = true; } }, 'Nuovi messaggi ↓');
     const pins = h('section', { class: 'pins', hidden: true, 'aria-label': 'Messaggi fissati' });
 
     feed.addEventListener('scroll', () => {
-      if (feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80) jump.classList.remove('show');
+      if (feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80) jump.hidden = true;
     });
     function scrollEnd(smooth) {
       feed.scrollTo({ top: feed.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
@@ -199,24 +147,23 @@
     const fileInput = h('input', { type: 'file', hidden: true });
     const chosen = h('div', { class: 'chosen', hidden: true });
     const err = h('div', { class: 'err', role: 'alert' });
-    const sendBtn = h('button', { class: 'send', type: 'submit', 'aria-label': 'Invia', title: 'Invia' }, icon('send', 22));
+    const sendBtn = h('button', { class: 'btn primary', type: 'submit' }, 'Invia');
 
     function refreshChosen() {
       chosen.replaceChildren();
       chosen.hidden = !pickedFile;
       if (pickedFile) {
-        chosen.append(icon('file', 16), h('span', { class: 'nm' }, pickedFile.name), h('small', {}, fmtSize(pickedFile.size)),
-          h('button', {
-            class: 'act', type: 'button', 'aria-label': 'Rimuovi il file',
-            onclick: () => { pickedFile = null; fileInput.value = ''; refreshChosen(); },
-          }, icon('x', 16)));
+        chosen.append(
+          h('span', { class: 'nm' }, pickedFile.name),
+          h('small', {}, fmtSize(pickedFile.size)),
+          h('button', { class: 'link', type: 'button', onclick: () => { pickedFile = null; fileInput.value = ''; refreshChosen(); } }, 'Rimuovi')
+        );
       }
     }
     fileInput.addEventListener('change', () => {
       pickedFile = fileInput.files[0] || null;
       if (pickedFile && pickedFile.size > 8 * 1024 * 1024) {
         err.textContent = 'File troppo grande (massimo 8 MB).';
-        shake(err);
         pickedFile = null;
         fileInput.value = '';
       } else err.textContent = '';
@@ -227,7 +174,7 @@
       text.style.height = Math.min(text.scrollHeight, 140) + 'px';
     });
     text.addEventListener('keydown', (e) => {
-      // Sui telefoni "Invio" va a capo; si invia col pulsante.
+      // Sul computer "Invio" invia (Shift+Invio va a capo). Sul telefono "Invio" va a capo.
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !coarse) {
         e.preventDefault();
         form.requestSubmit();
@@ -254,7 +201,7 @@
           await load(true, true);
         } catch (ex) {
           err.textContent = ex.message;
-          shake(err);
+          if (ex.status === 401) kicked();
         }
         sendBtn.disabled = false;
         if (!coarse) text.focus();
@@ -262,55 +209,52 @@
     },
       chosen,
       h('div', { class: 'row' },
-        h('div', { class: 'box' },
-          h('button', { class: 'act', type: 'button', title: 'Allega un file', 'aria-label': 'Allega un file', onclick: () => fileInput.click() }, icon('clip', 20)),
-          text, fileInput),
-        sendBtn
+        h('button', { class: 'btn', type: 'button', onclick: () => fileInput.click() }, 'Allega'),
+        text, fileInput, sendBtn
       ),
       err
     );
 
     const header = h('header', { class: 'top' },
-      h('div', { class: 'mark sm', 'aria-hidden': 'true' }, 'Φ'),
-      h('h2', {}, h('span', { class: 'pre' }, 'Aula di '), 'Filosofia'),
-      h('span', { class: 'who' }, me.username, isAdmin ? h('span', { class: 'badge' }, 'prof') : null),
-      isAdmin ? btn('users', 'Classe', openUsers) : null,
-      btn('key', 'Password', openPassword),
-      btn('out', 'Esci', logout)
+      h('div', { class: 'title' },
+        h('h2', {}, 'Aula di Filosofia'),
+        h('span', { class: 'who' }, me.username, isAdmin ? [' ', h('span', { class: 'badge' }, 'prof')] : null)),
+      isAdmin ? h('button', { class: 'btn', type: 'button', onclick: openUsers }, 'Classe') : null,
+      h('button', { class: 'btn', type: 'button', onclick: openPassword }, 'Password'),
+      h('button', { class: 'btn', type: 'button', onclick: logout }, 'Esci')
     );
 
     app.append(h('div', { class: 'shell' }, header, pins, h('div', { class: 'feed-wrap' }, feed, jump), form));
+
+    function kicked() {
+      me = null;
+      showAuth('login', 'Sei stato disconnesso: la sessione è scaduta oppure l\'account è stato aperto su un altro dispositivo.');
+    }
 
     // ----- messaggi -----
     function goTo(id) {
       const el = document.getElementById('m-' + id);
       if (!el) return;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.remove('flash');
-      void el.offsetWidth;
       el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 1500);
     }
 
-    function plaque(m, fresh) {
+    function pinItem(m) {
       return h('div', {
-        class: 'plaque' + (fresh ? ' fresh' : ''), role: 'button', tabindex: '0',
-        'aria-label': `Messaggio fissato di ${m.username}`,
+        class: 'pin-item', role: 'button', tabindex: '0',
         onclick: () => goTo(m.id),
         onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(m.id); } },
       },
-        h('span', { class: 'disc' }, icon('pin', 16)),
-        h('div', { class: 'p-body' },
+        h('div', { class: 'body' },
           h('div', { class: 'who' }, m.username),
           m.text ? h('div', { class: 'txt' }, m.text) : null,
-          m.file_id ? h('div', { class: 'p-file' }, icon('file', 14), h('span', {}, m.file_name)) : null),
-        isAdmin ? h('button', {
-          class: 'act unpin', type: 'button', title: 'Stacca', 'aria-label': 'Stacca dai fissati',
-          onclick: (e) => { e.stopPropagation(); pin(m.id, false); },
-        }, icon('x', 15)) : null
+          m.file_id ? h('div', { class: 'pfile' }, 'File: ' + m.file_name) : null),
+        isAdmin ? h('button', { class: 'link', type: 'button', onclick: (e) => { e.stopPropagation(); pin(m.id, false); } }, 'Stacca') : null
       );
     }
 
-    function msgNode(m, isNew) {
+    function msgNode(m) {
       const mine = m.user_id === me.id;
       const prof = m.role === 'admin';
 
@@ -320,32 +264,22 @@
               h('img', { class: 'preview', src: `/api/files/${m.file_id}?inline=1`, alt: m.file_name, loading: 'lazy' }))
           : null,
         h('a', { class: 'attach', href: `/api/files/${m.file_id}`, download: m.file_name },
-          icon('file', 16), h('span', { class: 'nm' }, m.file_name), h('small', {}, fmtSize(m.file_size)))
+          m.file_name, h('small', {}, fmtSize(m.file_size)))
       ) : null;
 
-      const acts = isAdmin ? h('span', { class: 'acts' },
-        h('button', {
-          class: 'act' + (m.pinned ? ' on' : ''), type: 'button',
-          title: m.pinned ? 'Stacca' : 'Fissa', 'aria-label': m.pinned ? 'Stacca il messaggio' : 'Fissa il messaggio',
-          onclick: () => pin(m.id, !m.pinned),
-        }, icon('pin', 16)),
-        h('button', {
-          class: 'act del', type: 'button', title: 'Elimina', 'aria-label': 'Elimina il messaggio',
-          onclick: () => remove(m.id),
-        }, icon('trash', 16))
+      const canDelete = isAdmin || mine;
+      const acts = (isAdmin || canDelete) ? h('span', { class: 'acts' },
+        isAdmin ? h('button', { class: 'link', type: 'button', onclick: () => pin(m.id, !m.pinned) }, m.pinned ? 'Stacca' : 'Fissa') : null,
+        canDelete ? h('button', { class: 'link del', type: 'button', onclick: () => remove(m.id) }, 'Elimina') : null
       ) : null;
 
-      const avatar = h('div', { class: 'avatar' + (prof ? ' prof' : ''), 'aria-hidden': 'true' }, initial(m.username));
-      avatar.style.setProperty('--h', hue(m.username));
-
-      return h('div', { class: 'msg' + (mine ? ' mine' : '') + (m.pinned ? ' is-pinned' : '') + (isNew ? ' enter' : ''), id: 'm-' + m.id },
-        avatar,
+      return h('div', { class: 'msg' + (mine ? ' mine' : '') + (m.pinned ? ' is-pinned' : ''), id: 'm-' + m.id },
         h('div', { class: 'bubble' },
           h('div', { class: 'meta' },
-            m.pinned ? h('span', { class: 'pin-flag', title: 'Messaggio fissato' }, icon('pin', 14)) : null,
             h('span', { class: 'name' }, m.username),
             prof ? h('span', { class: 'badge' }, 'prof') : null,
             h('time', { datetime: m.created_at }, fmtTime(m.created_at)),
+            m.pinned ? h('span', { class: 'flag' }, 'Fissato') : null,
             acts),
           m.text ? h('div', { class: 'text' }, m.text) : null,
           files)
@@ -359,42 +293,31 @@
 
       feed.replaceChildren();
       if (!data.messages.length) {
-        feed.append(h('div', { class: 'empty' },
-          h('div', { class: 'mark', 'aria-hidden': 'true' }, 'Φ'),
-          h('p', { class: 'big' }, 'Nessun messaggio, per ora.'),
-          h('p', {}, 'Scrivi il primo spunto di discussione.')));
+        feed.append(h('div', { class: 'empty' }, h('strong', {}, 'Nessun messaggio, per ora.'), 'Scrivi il primo spunto di discussione.'));
       }
       let lastDay = '';
       data.messages.forEach((m) => {
         const day = new Date(m.created_at).toDateString();
         if (day !== lastDay) {
-          feed.append(h('div', { class: 'day' }, h('span', {}, fmtDay(m.created_at))));
+          feed.append(h('div', { class: 'day' }, fmtDay(m.created_at)));
           lastDay = day;
         }
-        const isNew = !first && !seen.has(m.id);
-        if (isNew && m.user_id !== me.id) newFromOthers = true;
+        if (!first && !seen.has(m.id) && m.user_id !== me.id) newFromOthers = true;
         seen.add(m.id);
-        feed.append(msgNode(m, isNew));
+        feed.append(msgNode(m));
       });
 
       if (first || toBottom || nearBottom) scrollEnd(false);
       else {
         feed.scrollTop = prevTop;
-        if (newFromOthers) jump.classList.add('show');
+        if (newFromOthers) jump.hidden = false;
       }
 
       pins.replaceChildren();
       pins.hidden = !data.pinned.length;
       if (data.pinned.length) {
-        const row = h('div', { class: 'pins-row' });
-        data.pinned.forEach((m) => {
-          row.append(plaque(m, !first && !seenPins.has(m.id)));
-          seenPins.add(m.id);
-        });
-        pins.append(
-          h('div', { class: 'pins-head' }, icon('pin', 15), 'Messaggi fissati', h('span', { class: 'count' }, String(data.pinned.length))),
-          row
-        );
+        pins.append(h('h3', {}, data.pinned.length === 1 ? 'Messaggio fissato' : 'Messaggi fissati'));
+        data.pinned.forEach((m) => pins.append(pinItem(m)));
       }
       first = false;
     }
@@ -408,7 +331,7 @@
           render(data, toBottom);
         }
       } catch (ex) {
-        if (ex.status === 401) { me = null; showAuth(); }
+        if (ex.status === 401) kicked();
       }
     }
 
@@ -427,18 +350,17 @@
       const onKey = (e) => { if (e.key === 'Escape') close(); };
       const close = () => {
         document.removeEventListener('keydown', onKey);
-        overlay.classList.add('out');
-        setTimeout(() => overlay.remove(), 180);
+        overlay.remove();
       };
       const overlay = h('div', { class: 'overlay', onclick: (e) => { if (e.target === overlay) close(); } },
         h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
           h('div', { class: 'modal-head' },
             h('h3', {}, title),
-            h('button', { class: 'act', type: 'button', 'aria-label': 'Chiudi', onclick: close }, icon('x', 20))),
+            h('button', { class: 'btn sm', type: 'button', onclick: close }, 'Chiudi')),
           content));
       document.addEventListener('keydown', onKey);
       document.body.append(overlay);
-      return { overlay, close };
+      return close;
     }
 
     function openUsers() {
@@ -484,7 +406,6 @@
               newPw.value = '';
             } catch (ex) {
               msg.textContent = ex.message;
-              shake(msg);
             }
           },
         },
@@ -503,7 +424,11 @@
 
     load(true);
     stopPolling();
-    pollTimer = setInterval(() => { if (!document.hidden) load(); }, 4000);
+    // Ogni 4 secondi se la pagina è aperta, ogni ~20 secondi se è in background (serve anche a segnalare che l'account è in uso).
+    pollTimer = setInterval(() => {
+      if (!document.hidden) { hiddenTicks = 0; load(); }
+      else if (++hiddenTicks % 5 === 0) load();
+    }, 4000);
   }
 
   function stopPolling() {
