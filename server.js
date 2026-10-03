@@ -71,6 +71,7 @@ async function initDb() {
       pinned BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ NOT NULL DEFAULT now();
   `);
 
   // Crea l'account admin della prof solo se non esiste (non sovrascrive mai la password cambiata dopo)
@@ -128,6 +129,8 @@ async function auth(req, res, next) {
     }
     req.user = rows[0];
     req.token = token;
+    // segna la sessione come "attiva ora" (serve a impedire due accessi contemporanei)
+    pool.query("UPDATE sessions SET last_seen = now() WHERE token = $1 AND last_seen < now() - interval '10 seconds'", [token]).catch(() => {});
     next();
   } catch (e) {
     next(e);
@@ -162,6 +165,34 @@ async function createSession(userId) {
   const token = crypto.randomBytes(32).toString('hex');
   await pool.query('INSERT INTO sessions (token, user_id) VALUES ($1, $2)', [token, userId]);
   return token;
+}
+
+// Un solo accesso alla volta per account: se esiste una sessione attiva (vista negli ultimi 60 secondi)
+// il nuovo login viene rifiutato. Se invece le vecchie sessioni sono ferme, vengono chiuse e si entra.
+async function startSession(userId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock($1)', [userId]);
+    const busy = await client.query(
+      "SELECT 1 FROM sessions WHERE user_id = $1 AND last_seen > now() - interval '60 seconds'",
+      [userId]
+    );
+    if (busy.rowCount) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    await client.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+    const token = crypto.randomBytes(32).toString('hex');
+    await client.query('INSERT INTO sessions (token, user_id) VALUES ($1, $2)', [token, userId]);
+    await client.query('COMMIT');
+    return token;
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 // ---------- Account ----------
@@ -209,8 +240,12 @@ app.post('/api/login', wrap(async (req, res) => {
     noteAttempt(key);
     return res.status(401).json({ error: 'Nome utente o password errati.' });
   }
+  const token = await startSession(rows[0].id);
+  if (!token) {
+    return res.status(409).json({ error: 'Questo account è già in uso su un altro dispositivo. Esci da lì, oppure riprova tra un minuto.' });
+  }
   attempts.delete(key);
-  setSessionCookie(res, await createSession(rows[0].id));
+  setSessionCookie(res, token);
   res.json({ user: { id: rows[0].id, username: rows[0].username, role: rows[0].role } });
 }));
 
@@ -277,9 +312,16 @@ app.post('/api/messages', auth, (req, res, next) => {
   res.json({ ok: true });
 }));
 
-app.delete('/api/messages/:id', auth, adminOnly, wrap(async (req, res) => {
-  const { rows } = await pool.query('DELETE FROM messages WHERE id = $1 RETURNING file_id', [req.params.id]);
-  if (rows.length && rows[0].file_id) await pool.query('DELETE FROM files WHERE id = $1', [rows[0].file_id]);
+// L'admin può eliminare qualsiasi messaggio; gli studenti solo i propri.
+app.delete('/api/messages/:id', auth, wrap(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Messaggio non valido.' });
+  const isAdmin = req.user.role === 'admin';
+  const { rows } = isAdmin
+    ? await pool.query('DELETE FROM messages WHERE id = $1 RETURNING file_id', [id])
+    : await pool.query('DELETE FROM messages WHERE id = $1 AND user_id = $2 RETURNING file_id', [id, req.user.id]);
+  if (!rows.length) return res.status(404).json({ error: 'Messaggio non trovato, oppure non è tuo.' });
+  if (rows[0].file_id) await pool.query('DELETE FROM files WHERE id = $1', [rows[0].file_id]);
   res.json({ ok: true });
 }));
 
